@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  gateway:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+      - static
+    networks: [frontend]
+    volumes: ["certs:/etc/nginx/certs"]
+
+  api:
+    image: mycorp/api:latest
+    environment:
+      - DB_URL=postgres://db:5432/app
+    ports: ["8080:8080"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks: [backend]
+
+  static:
+    image: mycorp/static:latest
+    ports: ["3000:3000"]
+    networks: [frontend]
+
+  worker:
+    image: mycorp/worker:latest
+    command: ["./worker", "--jobs=4"]
+    depends_on:
+      - api
+      - queue
+    networks: [backend]
+
+  queue:
+    image: rabbitmq:3-management
+    ports: ["5672:5672", "15672:15672"]
+    networks: [backend]
+
+  db:
+    image: postgres:14
+    container_name: postgres-db
+    ports: ["5432:5432"]
+    volumes: ["dbdata:/var/lib/postgresql/data"]
+    networks: [backend]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    ports: ["6379:6379"]
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana
+    ports: ["3001:3000"]
+    depends_on:
+      - prometheus
+    networks: [monitoring]
+
+  prometheus:
+    image: prom/prometheus
+    ports: ["9090:9090"]
+    networks: [monitoring]
+
+  logstash:
+    image: logstash:7
+    depends_on:
+      - elasticsearch
+    networks: [monitoring]
+
+  elasticsearch:
+    image: elasticsearch:7
+    environment:
+      - discovery.type=single-node
+    ports: ["9200:9200"]
+    networks: [monitoring]
+
+volumes:
+  dbdata:
+  certs:
+
+networks:
+  frontend:
+  backend:
+  monitoring:
