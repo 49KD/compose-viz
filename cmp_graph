@@ -1,0 +1,54 @@
+digraph  {
+	fontname="Helvetica,Arial,sans-serif";pencolor="#00000044";shape="plaintext";style="filled";
+	n3[label=<
+<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+ <tr> <td> <b>create-db</b></td> </tr>
+ <tr> <td align="left"><i>Image name: </i><br align="left"/>
+postgres:14-alpine
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Container name: </i><br align="left"/>
+soda-create-db
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Ports: </i><br align="left"/>55432:5432<br align="left"/><br align="left"/></td></tr>
+</table>
+>,shape="plain",style="filled"];
+	n4[label=<
+<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+ <tr> <td> <b>create-server</b></td> </tr>
+ <tr> <td align="left"><i>Image name: </i><br align="left"/>
+N/A
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Container name: </i><br align="left"/>
+soda-create-server
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Ports: </i><br align="left"/>8000:8000<br align="left"/><br align="left"/></td></tr>
+</table>
+>,shape="plain",style="filled"];
+	n2[label=<
+<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+ <tr> <td> <b>validate-db</b></td> </tr>
+ <tr> <td align="left"><i>Image name: </i><br align="left"/>
+postgres:14-alpine
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Container name: </i><br align="left"/>
+soda-validate-db
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Ports: </i><br align="left"/>${DB_PORT:-5432}:5432<br align="left"/><br align="left"/></td></tr>
+</table>
+>,shape="plain",style="filled"];
+	n1[label=<
+<table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+ <tr> <td> <b>validate-server</b></td> </tr>
+ <tr> <td align="left"><i>Image name: </i><br align="left"/>
+N/A
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Container name: </i><br align="left"/>
+soda-validate-server
+ <br align="left"/></td></tr>
+ <tr> <td align="left"><i>Ports: </i><br align="left"/>8080:8000<br align="left"/>9081:8010<br align="left"/>9090:9090<br align="left"/><br align="left"/></td></tr>
+</table>
+>,shape="plain",style="filled"];
+	n4->n3;
+	n1->n2;
+	
+}
