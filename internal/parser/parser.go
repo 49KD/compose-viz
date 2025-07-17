@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
+const defaultImageName string = "N/A"
 
 type ComposeFile struct {
 	Version  string                    `yaml:"version"`
@@ -30,9 +32,41 @@ type ServiceConfig struct {
 	DependsOn     any               `yaml:"depends_on"`
 	Volumes       []string          `yaml:"volumes"`
 	Networks      []string          `yaml:"networks"`
-	Environment   map[string]string `yaml:"environment"`
+	Environment   any               `yaml:"environment"`
 }
 
+func (config *ServiceConfig) normalizeEnvironmentBlock () {
+	normalisedEnv := make(map[string]string)
+	switch env := config.Environment.(type) {
+	case map[string]any:
+		// fine
+		for key, value := range env {
+			if val, ok := value.(string); ok {
+				normalisedEnv[key] = val
+			}
+		}
+	case []any:
+		// process VAR=val strings manually
+		for _, value := range env {
+			if val, ok := value.(string); ok {
+				if parts := strings.SplitN(val, "=", 2); len(parts) == 2 {
+					normalisedEnv[parts[0]] = parts[1]
+				} else {
+					normalisedEnv[parts[0]] = `{OS inherited}`
+				}
+			}
+		}
+	}
+	config.Environment = normalisedEnv
+}
+
+func (config *ServiceConfig) normalizeImageName () {
+	image := config.Image
+	if image == "" {
+		image = defaultImageName
+	}
+	config.Image = image
+}
 
 func ParseFile(filename string) *ComposeFile {
 	data, err := os.ReadFile(filename)
@@ -46,7 +80,12 @@ func ParseFile(filename string) *ComposeFile {
 	if err != nil {
 		log.Fatalf("Parsing .yaml file %v error: %v", filename, err)
 	}
+
+	for _, serviceConfig := range composeFile.Services {
+		serviceConfig.normalizeEnvironmentBlock()
+		serviceConfig.normalizeImageName()
+	}
+
 	fmt.Printf("Compose file version: %v", composeFile.Version)
-	fmt.Printf("Compose file DependsOn: %v", composeFile.Services["create-server"].DependsOn)
 	return &composeFile
 }

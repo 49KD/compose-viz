@@ -9,7 +9,7 @@ build:
 
 # Run the binary with args and generate the image
 run: build
-	./compose-viz -f=docker-compose-example.yml && dot -Tpng cmp_graph > output.png
+	./compose-viz -f=docker-compose-example.yml && dot -Tpng composeGraph  > output.png
 
 open: run
 	open output.png
