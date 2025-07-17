@@ -8,7 +8,7 @@ import (
 	"github.com/49KD/compose-viz/internal/graph"
 )
 
-const defaultOutFile string = "composeGraph"
+const defaultOutFile string = "composeGraph.dot"
 
 func setLogging(verbose bool){
 	level := slog.LevelInfo
