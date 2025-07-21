@@ -1,0 +1,15 @@
+<table BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4">
+  <tr><td><b>{{.ServiceName}}</b></td></tr>
+  {{- if .ImageName}}
+  <tr><td align="left"><font point-size="10"><b>Image:</b> {{.ImageName}}</font></td></tr>
+  {{- end}}
+  {{- if .ContainerName}}
+  <tr><td align="left"><font point-size="10"><b>Container:</b> {{.ContainerName}}</font></td></tr>
+  {{- end}}
+  {{- if .PortsString}}
+  <tr><td align="left"><font point-size="10"><b>Ports:</b><br/>{{.PortsString}}</font></td></tr>
+  {{- end}}
+  {{- if .VolumesSting}}
+  <tr><td align="left"><font point-size="10"><b>Volumes:</b><br/>{{.VolumesString}}</font></td></tr>
+  {{- end}}
+</table>

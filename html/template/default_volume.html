@@ -1,0 +1,17 @@
+<table BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="4" BGCOLOR="#f4f4f4">
+  <tr>
+    <td>
+      <b>Volume:</b> {{.VolumeName}}
+    </td>
+  </tr>
+  {{- if .Mountpoints }}
+  <tr>
+    <td align="left">
+      <font point-size="10">
+        <b>Used by:</b><br/>
+        {{range .Mountpoints}}• {{.}}<br/>{{end}}
+      </font>
+    </td>
+  </tr>
+  {{- end }}
+</table>

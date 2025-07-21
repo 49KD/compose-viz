@@ -9,6 +9,8 @@ import (
 )
 
 const defaultOutFile string = "composeGraph.dot"
+const defaultNodeTemplate string = "html/template/default_node.html"
+const defaultVolumeTemplate string = "html/template/default_volume.html"
 
 func setLogging(verbose bool){
 	level := slog.LevelInfo
@@ -26,15 +28,27 @@ func setLogging(verbose bool){
 func main() {
 	var filePath = flag.String("f", "file", "Filepath for docker-compose.yml file to be processed")
 	var outFilePath = flag.String("o", defaultOutFile, "Filepath for generated dot file")
+	var graphTitle = flag.String("t", "defGraphTitle", "Title to be displayed on rendered graph")
+	var nodeTemplate = flag.String("n", defaultNodeTemplate, "HTML template to be used as node label")
+	var renderVolumes = flag.Bool("render-volumes", true, "Render volumes as separate nodes")
+
 	var verbose = flag.Bool("v", false, "Enable verbose logging")
+
 	flag.Parse()
 
 	setLogging(*verbose)
 
 	slog.Debug("Trying to parse a file", "filename", *filePath)
 	composeFile := parser.ParseFile(*filePath)
+
 	slog.Debug("Rendering file into dot-graph file")
-	dotString := graph.RenderGraph(composeFile)
+	opts := graph.RenderOptions{
+		RenderVolumes: *renderVolumes,
+		GraphTitle: *graphTitle,
+		NodeTemplatePath: *nodeTemplate,
+		VolumeTemplatePath: defaultVolumeTemplate,
+	}
+	dotString := graph.RenderGraph(composeFile, opts)
 
 	f, err := os.Create(*outFilePath)
 	if err != nil{
