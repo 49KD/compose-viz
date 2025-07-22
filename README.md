@@ -41,7 +41,6 @@ Outputs `composeGraph.dot` (by default). You can render it with Graphviz:
 ``` bash
 dot -Tpng composeGraph.dot -o output.png
 ```
-
 ### With Volumes
 
 ``` bash
@@ -72,6 +71,17 @@ make run
 
 This will build the binary, parse `complicated-compose.yml`, and output `output.png`.
 
+Here's how a generated diagram might look:
+
+<p align="center">
+  <img src="docs/no_volumes_diagram.png" alt="Compose Graph" />
+</p>
+
+You can also enable volume rendering:
+
+<p align="center">
+  <img src="docs/diagram_with_volumes.png" alt="Compose Graph with Volumes" />
+</p>
 ---
 
 ## 🎨 Templates
@@ -80,7 +90,7 @@ Both service and volume nodes use HTML-like templates.
 Customize them in:
 
 - `html/template/default_node.html`
-- `html/template/default_volume.html`
+- `html/template/defaulqqt_volume.html`
 
 Use Go template syntax with fields like `.ServiceName`, `.PortsString`, etc.
 

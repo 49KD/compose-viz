@@ -65,13 +65,13 @@ func main() {
 		slog.Info("DOT file written", "path", filename)
 
 	case "png":
-		cmd := exec.Command("dot", "-Tpng", "-o", *outPath+".png")
+		cmd := exec.Command("dot", "-Tpng", "-o", *outPath)
 		cmd.Stdin = bytes.NewBufferString(dotString)
 		if err := cmd.Run(); err != nil {
 			slog.Error("dot command failed", "error", err)
 			os.Exit(1)
 		}
-		slog.Info("PNG file rendered", "path", *outPath+".png")
+		slog.Info("PNG file rendered", "path", *outPath)
 
 	default:
 		slog.Error("Unsupported format", "format", *format)
