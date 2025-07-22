@@ -1,15 +1,29 @@
-.PHONY: all build run
+.PHONY: all build run clean open png
 
-# Default target: build the binary
+BINARY := compose-viz
+SRC := ./cmd/compose-viz
+COMPOSE := complicated-compose.yml
+OUT := composeGraph
+DOT := $(OUT).dot
+PNG := $(OUT).png
+
 all: build
 
-# Build the binary
 build:
-	go build -o compose-viz ./cmd/compose-viz
+	go build -o $(BINARY) $(SRC)
 
-# Run the binary with args and generate the image
 run: build
-	./compose-viz -v -f=docker-compose-example.yml && dot -Tpng composeGraph.dot  > output.png
+	./$(BINARY) -v -f=$(COMPOSE) -o=$(OUT) -format=dot
 
-open: run
-	open output.png
+png: build
+	./$(BINARY) -v -f=$(COMPOSE) -o=$(OUT) -format=png
+
+open: png
+	@case "$$(uname)" in \
+		Darwin*) open $(PNG) ;; \
+		Linux*) xdg-open $(PNG) ;; \
+		*) echo "No open command for this OS" ;; \
+	esac
+
+clean:
+	rm -f $(BINARY) $(DOT) $(PNG)

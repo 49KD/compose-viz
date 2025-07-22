@@ -1,16 +1,21 @@
 package main
 
 import (
-	"os"
+	"bytes"
 	"flag"
 	"log/slog"
+	"os"
+	"os/exec"
+
 	"github.com/49KD/compose-viz/internal/parser"
 	"github.com/49KD/compose-viz/internal/graph"
 )
 
-const defaultOutFile string = "composeGraph.dot"
-const defaultNodeTemplate string = "html/template/default_node.html"
-const defaultVolumeTemplate string = "html/template/default_volume.html"
+const (
+	defaultOutFile         = "composeGraph"
+	defaultNodeTemplate    = "html/template/default_node.html"
+	defaultVolumeTemplate  = "html/template/default_volume.html"
+)
 
 func setLogging(verbose bool){
 	level := slog.LevelInfo
@@ -26,13 +31,13 @@ func setLogging(verbose bool){
 }
 
 func main() {
-	var filePath = flag.String("f", "file", "Filepath for docker-compose.yml file to be processed")
-	var outFilePath = flag.String("o", defaultOutFile, "Filepath for generated dot file")
-	var graphTitle = flag.String("t", "defGraphTitle", "Title to be displayed on rendered graph")
-	var nodeTemplate = flag.String("n", defaultNodeTemplate, "HTML template to be used as node label")
-	var renderVolumes = flag.Bool("render-volumes", true, "Render volumes as separate nodes")
-
-	var verbose = flag.Bool("v", false, "Enable verbose logging")
+	filePath := flag.String("f", "file", "Filepath for docker-compose.yml file to be processed")
+	outPath := flag.String("o", defaultOutFile, "Filepath for generated dot file")
+	graphTitle := flag.String("t", "defGraphTitle", "Title to be displayed on rendered graph")
+	nodeTemplate := flag.String("n", defaultNodeTemplate, "HTML template to be used as node label")
+	renderVolumes := flag.Bool("render-volumes", false, "Render volumes as separate nodes")
+	format := flag.String("format", "dot", "Output format: dot or png")
+	verbose := flag.Bool("v", false, "Enable verbose logging")
 
 	flag.Parse()
 
@@ -50,12 +55,26 @@ func main() {
 	}
 	dotString := graph.RenderGraph(composeFile, opts)
 
-	f, err := os.Create(*outFilePath)
-	if err != nil{
-		panic(err)
-	}
-	defer f.Close()
+	switch *format {
+	case "dot":
+		filename := *outPath + ".dot"
+		err := os.WriteFile(filename, []byte(dotString), 0644)
+		if err != nil {
+			panic(err)
+		}
+		slog.Info("DOT file written", "path", filename)
 
-	slog.Debug("Writing graph into file", "filename", *outFilePath)
-	f.WriteString(dotString)
+	case "png":
+		cmd := exec.Command("dot", "-Tpng", "-o", *outPath+".png")
+		cmd.Stdin = bytes.NewBufferString(dotString)
+		if err := cmd.Run(); err != nil {
+			slog.Error("dot command failed", "error", err)
+			os.Exit(1)
+		}
+		slog.Info("PNG file rendered", "path", *outPath+".png")
+
+	default:
+		slog.Error("Unsupported format", "format", *format)
+		os.Exit(1)
+	}
 }

@@ -7,9 +7,9 @@
   <tr><td align="left"><font point-size="10"><b>Container:</b> {{.ContainerName}}</font></td></tr>
   {{- end}}
   {{- if .PortsString}}
-  <tr><td align="left"><font point-size="10"><b>Ports:</b><br/>{{.PortsString}}</font></td></tr>
+  <tr><td align="left"><font point-size="10"><b>Ports:</b><br align="left"/>{{.PortsString}}</font></td></tr>
   {{- end}}
-  {{- if .VolumesSting}}
-  <tr><td align="left"><font point-size="10"><b>Volumes:</b><br/>{{.VolumesString}}</font></td></tr>
+  {{- if .VolumesString}}
+  <tr><td align="left"><font point-size="10"><b>Volumes:</b><br align="left"/>{{.VolumesString}}</font></td></tr>
   {{- end}}
 </table>

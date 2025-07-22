@@ -1,0 +1,128 @@
+version: "3.9"
+
+services:
+  gateway:
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/nginx/certs
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - webapp
+    networks:
+      - frontend
+    labels:
+      - "traefik.enable=true"
+
+  webapp:
+    image: mycorp/webapp:1.2.3
+    environment:
+      - DATABASE_URL=postgres://appuser:pass@db:5432/appdb
+    volumes:
+      - app_static:/usr/share/webapp/static
+    depends_on:
+      - db
+      - redis
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      retries: 3
+
+  worker:
+    image: mycorp/worker:latest
+    command: ["python", "worker.py"]
+    volumes:
+      - logs:/var/log/myapp
+    environment:
+      - QUEUE_HOST=rabbit
+    depends_on:
+      - rabbit
+    networks:
+      - backend
+
+  db:
+    image: postgres:15
+    container_name: pg-main
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=appuser
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=appdb
+    networks:
+      - backend
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  rabbit:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitdata:/var/lib/rabbitmq
+    networks:
+      - backend
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:2.7.3
+    ports:
+      - "3100:3100"
+    volumes:
+      - lokidata:/loki
+    networks:
+      - observability
+
+  promtail:
+    image: grafana/promtail:2.7.3
+    volumes:
+      - /var/log:/var/log
+      - ./promtail.yaml:/etc/promtail/config.yml
+    depends_on:
+      - loki
+    networks:
+      - observability
+
+networks:
+  frontend:
+  backend:
+  observability:
+
+volumes:
+  certs:
+  app_static:
+  logs:
+  dbdata:
+  rabbitdata:
+  grafana-storage:
+  lokidata:

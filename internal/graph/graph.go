@@ -10,7 +10,7 @@ import (
 )
 
 const portEntityTemplate string = `<br align="left"/>`
-const volumeEntityTemplate string = `<br align="left/>`
+const volumeEntityTemplate string = `<br align="left"/>`
 
 type RenderOptions struct {
 	RenderVolumes      bool
@@ -48,15 +48,62 @@ func (s *ServiceToRender) renderPorts() string {
 	return s.PortsString
 }
 
-func (s *ServiceToRender) renderVolumes(service *parser.ServiceConfig, namedVolumes map[string]string) string {
+func (s *ServiceToRender) renderVolumes(
+	service *parser.ServiceConfig,
+	namedVolumes map[string]struct{},
+) string {
 	var b strings.Builder
 	for _, volume := range service.Volumes {
-		if _, ok := namedVolumes[volume]; !ok {
+		parts := strings.SplitN(volume, ":", 2)
+		if len(parts) < 2 {
+			continue // possibly anonymous volume
+		}
+		source := parts[0]
+		if _, ok := namedVolumes[source]; !ok {
 			b.WriteString(volume + volumeEntityTemplate)
 		}
 	}
 	s.VolumesString = b.String()
 	return s.VolumesString
+}
+
+func renderNamedVolumes(
+	volumeNodeTmpl string,
+	graph *dot.Graph,
+	composeFile *parser.ComposeFile,
+	volumesUsage map[string][]string,
+	servicesNodes map[string]serviceNodePair,
+) {
+	tmpl := template.Must(template.ParseFiles(volumeNodeTmpl))
+	volGraph := graph.Subgraph("volumes_cluster", dot.ClusterOption{})
+	volGraph.Attr("rank", "min")
+	volGraph.Attr("rankdir", "TB")
+	volGraph.Attr("label", "")
+	for volumeName := range composeFile.Volumes {
+		v := VolumeToRender{
+			VolumeName: volumeName,
+			Mountpoints: []string{},
+		}
+		for _, service := range volumesUsage[volumeName] {
+			v.Mountpoints = append(v.Mountpoints, service)
+		}
+		var buffer bytes.Buffer
+		tmpl.Execute(&buffer, v)
+
+		node := volGraph.Node(volumeName)
+		node.Attr("label", dot.HTML(buffer.String()))
+		node.Attr("shape", "plane")
+		for _, mp := range v.Mountpoints {
+			toNode := *servicesNodes[mp].node
+			edge := graph.Edge(node, toNode)
+			edge.Attr("arrowhead", "vee")
+			if len(v.Mountpoints) == 1 {
+				edge.Attr("constraint", "true")
+			} else {
+				edge.Attr("constraint", "false")
+			}
+		}
+	}
 }
 
 var nodesServicesMap = make(map[string]serviceNodePair)
@@ -96,11 +143,17 @@ func setEdges(graph *dot.Graph, nodesMap *map[string]serviceNodePair){
 	}
 }
 
-func extractNamedVolumes(service *parser.ServiceConfig, namedVolumes map[string]string) {
+func extractNamedVolumes(
+	serviceName string,
+	service *parser.ServiceConfig,
+	namedVolumes map[string]struct{},
+	volumesUsage map[string][]string,
+) {
 	for _, v := range service.Volumes {
 		parts := strings.SplitN(v, ":", 2)
 		if len(parts) == 2 && !strings.HasPrefix(parts[0], "/") && !strings.HasPrefix(parts[0], ".") {
-			namedVolumes[v] = parts[0]
+			namedVolumes[v] = struct{}{}
+			volumesUsage[parts[0]] = append(volumesUsage[parts[0]], serviceName)
 		}
 	}
 }
@@ -112,6 +165,7 @@ func setGraphAttrs(graph *dot.Graph, title string) {
 		"pencolor": "#00000044",
 		"fontname": "Helvetica,Arial,sans-serif",
 		"shape":    "plaintext",
+		"rankdir":  "TB",
 	}
 	for attr, value := range nodeStyle {
 		graph.Attr(attr, value)
@@ -131,7 +185,8 @@ func RenderGraph(file *parser.ComposeFile, opts RenderOptions) string {
 
 	networkClusters := make(map[string]*dot.Graph)
 
-	namedVolumes := make(map[string]string)
+	namedVolumes := map[string]struct{}{}
+	volumesUsage := make(map[string][]string)
 
 	for serviceName, serviceAttrs := range file.Services {
 		image := serviceAttrs.Image
@@ -149,9 +204,14 @@ func RenderGraph(file *parser.ComposeFile, opts RenderOptions) string {
 		}
 		service.renderPorts()
 		if opts.RenderVolumes {
-			extractNamedVolumes(&serviceAttrs, namedVolumes)
+			extractNamedVolumes(
+				serviceName,
+				&serviceAttrs,
+				namedVolumes,
+				volumesUsage,
+			)
 		}
-		service.renderVolumes()
+		service.renderVolumes(&serviceAttrs, namedVolumes)
 		var buffer bytes.Buffer
 		tmpl.Execute(&buffer, service)
 
@@ -179,6 +239,14 @@ func RenderGraph(file *parser.ComposeFile, opts RenderOptions) string {
 		nodesServicesMap[serviceName] = serviceNodePair{service, &node}
 	}
 	setEdges(mainGraph, &nodesServicesMap)
-
+	if opts.RenderVolumes {
+		renderNamedVolumes(
+			opts.VolumeTemplatePath,
+			mainGraph,
+			file,
+			volumesUsage,
+			nodesServicesMap,
+		)
+	}
 	return mainGraph.String()
 }
