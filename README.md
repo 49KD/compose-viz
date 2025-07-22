@@ -1,4 +1,4 @@
-# 🐳 ComposeViz — Visualize Your Docker Compose in Style
+# 🐳 ComposeViz — Visualize compose files with Graphviz
 
 **ComposeViz** is a lightweight CLI tool that parses your `docker-compose.yml` and generates clean, professional-looking visual diagrams in [Graphviz DOT](https://graphviz.org/) format (and optionally PNG/SVG/etc).  
 Perfect for DevOps docs, architecture overviews, and impressing your teammates.
@@ -94,6 +94,18 @@ Customize them in:
 
 Use Go template syntax with fields like `.ServiceName`, `.PortsString`, etc.
 
+---
+
+### Acknowledgements
+
+This project relies on the excellent [emicklei/dot](https://github.com/emicklei/dot) library for generating Graphviz-compatible graph definitions in Go.
+
+To render visual output (e.g., PNG or SVG), the [Graphviz](https://graphviz.org/) system tool must be installed on your machine:
+
+- macOS: `brew install graphviz`
+- Debian/Ubuntu: `apt install graphviz`
+- Arch Linux: `pacman -S graphviz`
+- Windows: [Graphviz Downloads](https://graphviz.org/download/)
 ---
 
 ## 📄 License
