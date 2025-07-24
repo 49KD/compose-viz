@@ -108,8 +108,7 @@ func renderNamedVolumes(
 
 var nodesServicesMap = make(map[string]serviceNodePair)
 
-func setEdges(graph *dot.Graph, nodesMap *map[string]serviceNodePair){
-	nMap := *nodesMap
+func setEdges(graph *dot.Graph, nMap map[string]serviceNodePair){
 	for _, nodeServicePair := range nMap {
 		switch dependsOnBlock := nodeServicePair.service.DependsOn.(type) {
 		case []any:
@@ -238,7 +237,7 @@ func RenderGraph(file *parser.ComposeFile, opts RenderOptions) string {
 
 		nodesServicesMap[serviceName] = serviceNodePair{service, &node}
 	}
-	setEdges(mainGraph, &nodesServicesMap)
+	setEdges(mainGraph, nodesServicesMap)
 	if opts.RenderVolumes {
 		renderNamedVolumes(
 			opts.VolumeTemplatePath,
